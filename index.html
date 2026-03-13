@@ -785,7 +785,7 @@ const STAGE_ORDER = ['egg','child','adolescent','adult','elder'];
 // ============================================================
 // STATE
 // ============================================================
-let supabase = null;
+let db = null;
 let USER_TOKEN = null;
 let animals = [];
 let activityLog = [];
@@ -817,7 +817,7 @@ async function init() {
 
   // Init Supabase client — public users never see or touch these keys
   const { createClient } = window.supabase;
-  supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+  db = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
   // User token (anonymous identity stored in localStorage)
   USER_TOKEN = localStorage.getItem('user_token');
@@ -858,9 +858,8 @@ function sbHeaders() {
 }
 
 async function loadAnimals() {
-  if (!supabase) return;
-  const { data, error } = await supabase
-    .from('animals')
+  if (!db) return;
+  const { data, error } = await db
     .select('*')
     .eq('user_token', USER_TOKEN)
     .order('created_at', { ascending: true });
@@ -868,9 +867,8 @@ async function loadAnimals() {
 }
 
 async function loadLog() {
-  if (!supabase) return;
-  const { data } = await supabase
-    .from('activity_log')
+  if (!db) return;
+  const { data } = await db
     .select('*')
     .eq('user_token', USER_TOKEN)
     .order('created_at', { ascending: false })
@@ -881,8 +879,8 @@ async function loadLog() {
 async function log(message, event_type='info') {
   activityLog.unshift({ message, event_type, created_at: new Date().toISOString() });
   renderLog();
-  if (!supabase) return;
-  await supabase.from('activity_log').insert({ user_token: USER_TOKEN, event_type, message });
+  if (!db) return;
+  await db.from('activity_log').insert({ user_token: USER_TOKEN, event_type, message });
 }
 
 // ============================================================
@@ -955,7 +953,7 @@ async function addAnimal() {
     last_food_refill: refill ? new Date(refill).toISOString() : new Date(started).toISOString(),
   };
 
-  const { data, error } = await supabase.from('animals').insert(row).select().single();
+  const { data, error } = await db.from('animals').insert(row).select().single();
   if (error) { toast('Failed to save: ' + error.message, 'red'); return; }
   animals.push(data);
   await log(`Added ${count}x ${name} (${type}) — ready ${formatDate(ready_at)}`, 'add');
@@ -967,7 +965,7 @@ async function addAnimal() {
 async function removeAnimal(id) {
   const a = animals.find(x => x.id === id);
   if (!confirm(`Remove ${a?.name}?`)) return;
-  await supabase.from('animals').delete().eq('id', id);
+  await db.from('animals').delete().eq('id', id);
   animals = animals.filter(x => x.id !== id);
   await log(`Removed ${a?.name}`, 'remove');
   renderAll();
@@ -975,7 +973,7 @@ async function removeAnimal(id) {
 
 async function refillFood(id) {
   const now = new Date().toISOString();
-  await supabase.from('animals').update({
+  await db.from('animals').update({
     food_in_trough: 1000,
     last_food_refill: now,
     notif_sent_low_food: false,
@@ -1147,7 +1145,7 @@ function renderLog() {
 
 async function clearLog() {
   if (!confirm('Clear all activity log entries?')) return;
-  await supabase.from('activity_log').delete().eq('user_token', USER_TOKEN);
+  await db.from('activity_log').delete().eq('user_token', USER_TOKEN);
   activityLog = [];
   renderLog();
 }
@@ -1212,7 +1210,7 @@ async function enableNotifications() {
     pushSubscription = sub.toJSON();
 
     // Save to Supabase
-    const { error } = await supabase.from('push_subscriptions').upsert({
+    const { error } = await db.from('push_subscriptions').upsert({
       user_token: USER_TOKEN,
       endpoint:   pushSubscription.endpoint,
       p256dh:     pushSubscription.keys.p256dh,
