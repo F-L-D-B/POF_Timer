@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manor Farm Tracker — RuneScape POF</title>
+<meta name="description" content="Track your RuneScape Player Owned Farm animals — timers, food, and push notifications when ready.">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌾</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   DESIGN SYSTEM
+   ============================================================ */
+:root {
+  --gold:       #c8a84b;
+  --gold-light: #e8c96a;
+  --gold-dim:   #8a6828;
+  --dark:       #100d06;
+  --panel:      #1e1710;
+  --panel2:     #2a2010;
+  --panel3:     #352a15;
+  --border:     #5a4018;
+  --border2:    #7a5820;
+  --text:       #f0e0a0;
+  --muted:      #9a8060;
+  --green:      #4a9c5e;
+  --green-dim:  #2a5c38;
+  --red:        #c44030;
+  --red-dim:    #6a2018;
+  --blue:       #3a7ac4;
+  --amber:      #d08030;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Crimson Text', Georgia, serif;
+  background: var(--dark);
+  color: var(--text);
+  min-height: 100vh;
+  background-image:
+    radial-gradient(ellipse at 20% 0%, rgba(100,70,20,0.15) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 100%, rgba(60,40,10,0.2) 0%, transparent 60%);
+}
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--panel); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+.site-header {
+  background: linear-gradient(90deg, #0a0804 0%, #1e1508 30%, #1e1508 70%, #0a0804 100%);
+  border-bottom: 2px solid var(--gold-dim);
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+}
+
+.site-title {
+  font-family: 'Cinzel', serif;
+  font-size: 20px;
+  color: var(--gold);
+  letter-spacing: 1px;
+  text-shadow: 0 0 30px rgba(200,168,75,0.3);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-actions { display: flex; gap: 8px; align-items: center; }
+
+main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 20px;
+}
+
+.layout { display: grid; grid-template-columns: 1fr 320px; gap: 20px; align-items: start; }
+
+@media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  color: var(--gold);
+  font-family: 'Crimson Text', serif;
+  font-size: 15px;
+  padding: 7px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.btn:hover { background: var(--panel3); border-color: var(--border2); color: var(--gold-light); }
+.btn.primary {
+  background: linear-gradient(135deg, #705010 0%, #c8a84b 50%, #705010 100%);
+  color: #1a1208;
+  font-weight: 600;
+  border-color: var(--gold);
+}
+.btn.primary:hover { filter: brightness(1.1); }
+.btn.sm { font-size: 13px; padding: 4px 10px; }
+.btn.danger { border-color: var(--red-dim); color: var(--red); }
+.btn.danger:hover { background: rgba(196,64,48,0.15); }
+.btn.success { border-color: var(--green-dim); color: var(--green); }
+.btn.success:hover { background: rgba(74,156,94,0.15); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ============================================================
+   PANELS / CARDS
+   ============================================================ */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.panel-header {
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  color: var(--gold);
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.panel-body { padding: 16px; }
+
+/* ============================================================
+   TABS
+   ============================================================ */
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: #120f08;
+  border-radius: 6px 6px 0 0;
+  overflow: hidden;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 11px 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  letter-spacing: 0.3px;
+  color: var(--muted);
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); background: rgba(200,168,75,0.05); }
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* ============================================================
+   FORM
+   ============================================================ */
+.form-section { margin-bottom: 16px; }
+.form-section-title {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+
+.field-grid { display: grid; gap: 10px; }
+.field-grid.cols2 { grid-template-columns: 1fr 1fr; }
+.field-grid.cols3 { grid-template-columns: 1fr 1fr 1fr; }
+
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 12px; color: var(--muted); letter-spacing: 0.3px; }
+
+.field input, .field select, .field textarea {
+  background: #0c0a05;
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'Crimson Text', serif;
+  font-size: 15px;
+  padding: 8px 10px;
+  border-radius: 3px;
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+.field input:focus, .field select:focus { border-color: var(--gold); }
+.field select option { background: #1a1208; }
+
+/* ============================================================
+   SUMMARY STATS
+   ============================================================ */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 600px) { .stats-row { grid-template-columns: repeat(2, 1fr); } }
+
+.stat-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 12px;
+  text-align: center;
+}
+.stat-value { font-family: 'Cinzel', serif; font-size: 26px; color: var(--gold); line-height: 1; }
+.stat-label { font-size: 12px; color: var(--muted); margin-top: 5px; }
+
+/* ============================================================
+   ANIMAL CARDS
+   ============================================================ */
+.animal-list { display: flex; flex-direction: column; gap: 8px; }
+
+.animal-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 12px 14px;
+  transition: border-color 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.animal-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--border);
+  transition: background 0.2s;
+}
+.animal-card.status-ready { border-color: var(--green-dim); }
+.animal-card.status-ready::before { background: var(--green); }
+.animal-card.status-low-food { border-color: var(--red-dim); }
+.animal-card.status-low-food::before { background: var(--red); }
+.animal-card.status-growing::before { background: var(--gold-dim); }
+.animal-card:hover { border-color: var(--border2); }
+
+.card-top {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.animal-emoji {
+  width: 44px; height: 44px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px;
+}
+
+.animal-name-row {
+  font-family: 'Cinzel', serif;
+  font-size: 14px;
+  color: var(--gold-light);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.animal-meta { font-size: 13px; color: var(--muted); margin-top: 2px; font-style: italic; }
+
+.card-actions { display: flex; gap: 6px; align-items: center; }
+
+.card-bottom {
+  display: grid;
+  grid-template-columns: 1fr 100px 110px;
+  gap: 12px;
+  margin-top: 10px;
+  align-items: center;
+}
+
+@media (max-width: 500px) {
+  .card-bottom { grid-template-columns: 1fr; }
+  .card-top { grid-template-columns: 40px 1fr; }
+  .card-actions { grid-column: 1 / -1; }
+}
+
+.progress-wrap { flex: 1; }
+.progress-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+.progress-bar {
+  height: 8px;
+  background: rgba(0,0,0,0.5);
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+.progress-fill.pf-green { background: linear-gradient(90deg, #2a5c38, #4a9c5e); }
+.progress-fill.pf-amber { background: linear-gradient(90deg, #6a4010, #c8a030); }
+.progress-fill.pf-done  { background: linear-gradient(90deg, #1e5c2e, #5acc7a); }
+
+.food-cell { text-align: center; }
+.food-val { font-family: 'Cinzel', serif; font-size: 20px; }
+.food-val.ok { color: var(--gold); }
+.food-val.low { color: var(--amber); }
+.food-val.critical { color: var(--red); }
+.food-sub { font-size: 11px; color: var(--muted); }
+
+.timer-cell { text-align: center; }
+.timer-val { font-family: 'Cinzel', serif; font-size: 16px; }
+.timer-val.done { color: var(--green); }
+.timer-val.soon { color: var(--amber); }
+.timer-val.ok { color: var(--gold); }
+.timer-sub { font-size: 11px; color: var(--muted); }
+
+/* ============================================================
+   BADGES
+   ============================================================ */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 0.3px;
+}
+.badge.ready  { background: rgba(74,156,94,0.15);  color: var(--green); border: 1px solid var(--green-dim); }
+.badge.growing{ background: rgba(58,122,196,0.12); color: var(--blue);  border: 1px solid #1a4a7a; }
+.badge.low    { background: rgba(196,64,48,0.15);  color: var(--red);   border: 1px solid var(--red-dim); }
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+.sidebar { display: flex; flex-direction: column; gap: 14px; }
+
+.food-guide-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.food-guide-table th {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+.food-guide-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid rgba(90,64,24,0.3);
+  vertical-align: top;
+}
+.food-guide-table tr:last-child td { border-bottom: none; }
+.food-guide-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+/* ============================================================
+   NOTIFICATIONS
+   ============================================================ */
+.notif-status-bar {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  margin-bottom: 14px;
+}
+.notif-status-bar.success { background: rgba(74,156,94,0.15); border: 1px solid var(--green-dim); color: #7ad498; }
+.notif-status-bar.error   { background: rgba(196,64,48,0.15); border: 1px solid var(--red-dim); color: #f08070; }
+.notif-status-bar.show    { display: flex; }
+
+/* ============================================================
+   TOGGLE
+   ============================================================ */
+.toggle { position: relative; width: 38px; height: 20px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-track {
+  position: absolute; inset: 0;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.toggle-track::before {
+  content: '';
+  position: absolute;
+  width: 14px; height: 14px;
+  left: 2px; top: 2px;
+  background: var(--muted);
+  border-radius: 50%;
+  transition: 0.2s;
+}
+.toggle input:checked ~ .toggle-track { background: rgba(74,156,94,0.25); border-color: var(--green); }
+.toggle input:checked ~ .toggle-track::before { background: var(--green); transform: translateX(18px); }
+
+/* ============================================================
+   SETTINGS LIST
+   ============================================================ */
+.settings-list { display: flex; flex-direction: column; gap: 8px; }
+.settings-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(90,64,24,0.3);
+}
+.settings-item:last-child { border-bottom: none; }
+.settings-text label { font-size: 14px; display: block; }
+.settings-text small { font-size: 12px; color: var(--muted); font-style: italic; }
+
+/* ============================================================
+   LOG
+   ============================================================ */
+.log-list { display: flex; flex-direction: column; gap: 5px; max-height: 400px; overflow-y: auto; }
+.log-entry {
+  display: flex; gap: 10px;
+  padding: 7px 10px;
+  background: var(--panel2);
+  border: 1px solid rgba(90,64,24,0.3);
+  border-radius: 3px;
+  font-size: 13px;
+}
+.log-time { color: var(--muted); font-size: 11px; white-space: nowrap; padding-top: 1px; }
+
+
+/* ============================================================
+   EMPTY STATE
+   ============================================================ */
+.empty-state { text-align: center; padding: 48px 20px; color: var(--muted); }
+.empty-icon { font-size: 48px; opacity: 0.4; margin-bottom: 12px; }
+.empty-text { font-size: 15px; font-style: italic; }
+
+/* ============================================================
+   FOOD USAGE TABLE
+   ============================================================ */
+.usage-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.usage-table th {
+  font-family: 'Cinzel', serif; font-size: 11px; font-weight: 400;
+  color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px;
+  padding: 8px 12px; border-bottom: 1px solid var(--border); text-align: left;
+}
+.usage-table td { padding: 9px 12px; border-bottom: 1px solid rgba(90,64,24,0.25); }
+.usage-table tr:last-child td { border-bottom: none; }
+.usage-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+#toast {
+  position: fixed; bottom: 20px; right: 20px;
+  background: var(--panel);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  padding: 12px 18px;
+  border-radius: 5px;
+  font-size: 14px;
+  z-index: 9999;
+  transform: translateY(100px);
+  opacity: 0;
+  transition: all 0.25s;
+  max-width: 320px;
+}
+#toast.show { transform: translateY(0); opacity: 1; }
+#toast.green { border-color: var(--green-dim); color: #8adcaa; }
+#toast.red    { border-color: var(--red-dim);   color: #f08878; }
+</style>
+</head>
+<body>
+
+<!-- No setup overlay — credentials are hardcoded by the site owner before deploy -->
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- HEADER -->
+<header class="site-header">
+  <div class="site-title">
+    <span>🌾</span>
+    <span>Manor Farm Tracker</span>
+  </div>
+  <div class="header-actions">
+    <span id="sync-status" style="font-size:12px;color:var(--muted);font-style:italic;"></span>
+    <button class="btn sm" onclick="showTab('notifications')">🔔 Notifications</button>
+    <button class="btn sm primary" onclick="openAddForm()">+ Add Animal</button>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main>
+  <div class="layout">
+
+    <!-- LEFT: Main content -->
+    <div>
+
+      <!-- ADD FORM -->
+      <div id="add-form" class="panel" style="display:none;margin-bottom:16px;">
+        <div class="panel-header">
+          Add Animal to Pen
+          <button class="btn sm" onclick="closeAddForm()">✕ Cancel</button>
+        </div>
+        <div class="panel-body">
+          <div class="form-section">
+            <div class="form-section-title">Animal</div>
+            <div class="field-grid cols3">
+              <div class="field">
+                <label>Type</label>
+                <select id="f-type" onchange="onTypeChange()">
+                  <option value="rabbit">🐰 Rabbit</option>
+                  <option value="chicken">🐔 Chicken</option>
+                  <option value="chinchompa">🐹 Chinchompa</option>
+                  <option value="sheep">🐑 Sheep</option>
+                  <option value="cow">🐄 Cow</option>
+                  <option value="spider">🕷️ Spider</option>
+                  <option value="zygomite">🍄 Zygomite</option>
+                  <option value="yak">🦬 Yak</option>
+                  <option value="dragon">🐉 Dragon</option>
+                  <option value="dinosaur">🦕 Dinosaur</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Name / Breed</label>
+                <input id="f-name" type="text" placeholder="e.g. Spotty, Rellekkan Cream">
+              </div>
+              <div class="field">
+                <label>Count in Pen</label>
+                <input id="f-count" type="number" min="1" max="10" value="2">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="form-section-title">Growth</div>
+            <div class="field-grid cols3">
+              <div class="field">
+                <label>Current Stage</label>
+                <select id="f-stage">
+                  <option value="egg">Egg</option>
+                  <option value="child">Child</option>
+                  <option value="adolescent" selected>Adolescent</option>
+                  <option value="adult">Adult</option>
+                  <option value="elder">Elder</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Target Stage</label>
+                <select id="f-target">
+                  <option value="adolescent">Adolescent</option>
+                  <option value="adult">Adult</option>
+                  <option value="elder" selected>Elder</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Started At</label>
+                <input id="f-started" type="datetime-local">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="form-section-title">Food</div>
+            <div class="field-grid cols2">
+              <div class="field">
+                <label>Food in Trough (current)</label>
+                <input id="f-food" type="number" min="0" max="1000" value="500">
+              </div>
+              <div class="field">
+                <label>Last Refill Time</label>
+                <input id="f-refill" type="datetime-local">
+              </div>
+            </div>
+          </div>
+
+          <button class="btn primary" onclick="addAnimal()" style="width:100%;justify-content:center;">
+            Add to Farm
+          </button>
+        </div>
+      </div>
+
+      <!-- TABS -->
+      <div class="panel">
+        <div class="tabs">
+          <button class="tab-btn active" onclick="showTab('animals')">Animals</button>
+          <button class="tab-btn" onclick="showTab('food')">Food Usage</button>
+          <button class="tab-btn" onclick="showTab('notifications')">Notifications</button>
+          <button class="tab-btn" onclick="showTab('log')">Log</button>
+        </div>
+
+        <!-- ANIMALS TAB -->
+        <div id="tab-animals" class="tab-content active panel-body">
+          <div class="stats-row">
+            <div class="stat-card">
+              <div class="stat-value" id="s-total">0</div>
+              <div class="stat-label">Animals</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="s-ready" style="color:var(--green)">0</div>
+              <div class="stat-label">Ready</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="s-food-hr">0</div>
+              <div class="stat-label">Food / Hour</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="s-alerts" style="color:var(--red)">0</div>
+              <div class="stat-label">Alerts</div>
+            </div>
+          </div>
+
+          <div class="animal-list" id="animal-list">
+            <div class="empty-state">
+              <div class="empty-icon">🐾</div>
+              <div class="empty-text">No animals yet. Add some to start tracking!</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- FOOD USAGE TAB -->
+        <div id="tab-food" class="tab-content panel-body">
+          <p style="font-size:13px;color:var(--muted);margin-bottom:14px;font-style:italic;">
+            Food consumption rates assume 1 food per animal per hour. Trough capacity is 1000 items.
+          </p>
+          <div style="overflow-x:auto;">
+            <table class="usage-table" id="food-usage-table">
+              <thead>
+                <tr>
+                  <th>Animal</th>
+                  <th>Food Type</th>
+                  <th>In Pen</th>
+                  <th>/hr</th>
+                  <th>/day</th>
+                  <th>Trough Left</th>
+                  <th>Est. Empty</th>
+                </tr>
+              </thead>
+              <tbody id="food-usage-body">
+                <tr><td colspan="7" style="text-align:center;padding:20px;color:var(--muted)">No animals tracked</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- NOTIFICATIONS TAB -->
+        <div id="tab-notifications" class="tab-content panel-body">
+          <div id="notif-bar" class="notif-status-bar"></div>
+
+          <div style="margin-bottom:20px;">
+            <p style="font-size:14px;color:var(--muted);margin-bottom:14px;line-height:1.6;font-style:italic;">
+              Push notifications are sent server-side by a Supabase Edge Function that runs every minute.
+              You'll receive alerts even if this tab is closed — as long as your browser allows background push.
+            </p>
+            <div id="push-status" style="font-size:14px;margin-bottom:12px;"></div>
+            <button class="btn success" id="notif-btn" onclick="enableNotifications()">
+              🔔 Enable Push Notifications
+            </button>
+          </div>
+
+          <div class="settings-list">
+            <div class="settings-item">
+              <div class="settings-text">
+                <label>Animal Ready to Harvest</label>
+                <small>Push when an animal reaches its target stage</small>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="n-ready" checked onchange="saveNotifSettings()">
+                <span class="toggle-track"></span>
+              </label>
+            </div>
+            <div class="settings-item">
+              <div class="settings-text">
+                <label>Low Food Warning (≤4h)</label>
+                <small>Push when trough food drops below 4 hours</small>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="n-food" checked onchange="saveNotifSettings()">
+                <span class="toggle-track"></span>
+              </label>
+            </div>
+            <div class="settings-item">
+              <div class="settings-text">
+                <label>Stage Advancement</label>
+                <small>Push on each individual growth stage change</small>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="n-stage" onchange="saveNotifSettings()">
+                <span class="toggle-track"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- LOG TAB -->
+        <div id="tab-log" class="tab-content panel-body">
+          <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+            <button class="btn sm danger" onclick="clearLog()">Clear Log</button>
+          </div>
+          <div class="log-list" id="log-list">
+            <div style="text-align:center;padding:20px;color:var(--muted);font-style:italic;">No activity yet</div>
+          </div>
+        </div>
+
+      </div><!-- /panel -->
+    </div><!-- /left -->
+
+    <!-- RIGHT: Sidebar -->
+    <div class="sidebar">
+
+      <!-- Quick Food Guide -->
+      <div class="panel">
+        <div class="panel-header">Food Guide</div>
+        <table class="food-guide-table">
+          <thead>
+            <tr><th>Animal</th><th>Best Food</th><th>Pen</th></tr>
+          </thead>
+          <tbody id="food-guide-body"></tbody>
+        </table>
+      </div>
+
+      <!-- Stage Times -->
+      <div class="panel">
+        <div class="panel-header">Stage Durations</div>
+        <div class="panel-body" style="padding:0;">
+          <table class="food-guide-table" id="stage-table">
+            <thead><tr><th>Animal</th><th>→Adult</th><th>→Elder</th></tr></thead>
+            <tbody id="stage-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /sidebar -->
+  </div><!-- /layout -->
+</main>
+
+<script>
+// ============================================================
+// ANIMAL DATA
+// ============================================================
+const ANIMALS = {
+  rabbit:     { emoji:'🐰', food:'Flowers / Vegetables', foodBest:'Woad Leaves', pen:'Small',  stages:{egg:0,child:1,adolescent:6,adult:24,elder:48} },
+  chicken:    { emoji:'🐔', food:'Seeds',               foodBest:'Sunchoke Seeds',pen:'Small',  stages:{egg:4,child:3,adolescent:12,adult:24,elder:48} },
+  chinchompa: { emoji:'🐹', food:'Any (Mush)',           foodBest:'Any food',      pen:'Small',  stages:{egg:0,child:2,adolescent:8,adult:24,elder:48} },
+  sheep:      { emoji:'🐑', food:'Flowers / Vegetables', foodBest:'Woad Leaves',   pen:'Medium', stages:{egg:0,child:3,adolescent:12,adult:36,elder:72} },
+  cow:        { emoji:'🐄', food:'Vegetables / Meat',    foodBest:'Raw Beef',      pen:'Medium', stages:{egg:0,child:4,adolescent:14,adult:36,elder:72} },
+  spider:     { emoji:'🕷️', food:'Meat / Fish',          foodBest:'Raw Bird Meat', pen:'Medium', stages:{egg:4,child:6,adolescent:20,adult:40,elder:72} },
+  zygomite:   { emoji:'🍄', food:'Fungal Spores',        foodBest:'Fungal Spores', pen:'Medium', stages:{egg:0,child:8,adolescent:24,adult:48,elder:96} },
+  yak:        { emoji:'🦬', food:'Flowers / Vegetables', foodBest:'Woad Leaves',   pen:'Large',  stages:{egg:0,child:8,adolescent:24,adult:48,elder:96} },
+  dragon:     { emoji:'🐉', food:'Meat / Fish',          foodBest:'Raw Meat/Fish', pen:'Large',  stages:{egg:8,child:12,adolescent:36,adult:60,elder:120} },
+  dinosaur:   { emoji:'🦕', food:'Meat Only',            foodBest:'Raw Meat',      pen:'Large',  stages:{egg:8,child:12,adolescent:36,adult:60,elder:120} },
+};
+
+const STAGE_ORDER = ['egg','child','adolescent','adult','elder'];
+
+// ============================================================
+// STATE
+// ============================================================
+let supabase = null;
+let USER_TOKEN = null;
+let animals = [];
+let activityLog = [];
+let pushSubscription = null;
+
+// ============================================================
+// ⚙️  OWNER CONFIG — fill these in before deploying
+// ============================================================
+const SUPABASE_URL        = 'https://otwkvxwazhwedxuvpdum.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_xfzKIFp_HKgUoWRUh7Jo4w_c99BlTkP';
+const VAPID_PUBLIC_KEY    = 'BJg-xHNwJeLa5L43U3I-pNvUKGJ16vRzEDWf_ItQFTqUF_WoDw3nM-l2F2ubpcKb9IxuLGz-UIQi2tNZ0rCiYW4';
+// ============================================================
+
+// ============================================================
+// INIT
+// ============================================================
+async function init() {
+  // Init Supabase client — public users never see or touch these keys
+  const { createClient } = supabaseJs;
+  supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+  // User token (anonymous identity stored in localStorage)
+  USER_TOKEN = localStorage.getItem('user_token');
+  if (!USER_TOKEN) {
+    USER_TOKEN = 'u_' + crypto.randomUUID().replace(/-/g,'');
+    localStorage.setItem('user_token', USER_TOKEN);
+  }
+
+  await loadAnimals();
+  await loadLog();
+  buildStaticTables();
+  renderAll();
+  loadNotifSettings();
+  updatePushStatus();
+
+  // Register service worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(e => console.warn('SW register failed', e));
+  }
+
+  // Auto-refresh every 60s
+  setInterval(async () => {
+    await loadAnimals();
+    renderAll();
+    setSyncStatus('Synced ' + new Date().toLocaleTimeString());
+  }, 60000);
+}
+
+function setSyncStatus(msg) {
+  document.getElementById('sync-status').textContent = msg;
+}
+
+// ============================================================
+// SUPABASE HELPERS
+// ============================================================
+function sbHeaders() {
+  return { 'x-user-token': USER_TOKEN };
+}
+
+async function loadAnimals() {
+  if (!supabase) return;
+  const { data, error } = await supabase
+    .from('animals')
+    .select('*')
+    .eq('user_token', USER_TOKEN)
+    .order('created_at', { ascending: true });
+  if (!error) { animals = data || []; setSyncStatus('Synced ' + new Date().toLocaleTimeString()); }
+}
+
+async function loadLog() {
+  if (!supabase) return;
+  const { data } = await supabase
+    .from('activity_log')
+    .select('*')
+    .eq('user_token', USER_TOKEN)
+    .order('created_at', { ascending: false })
+    .limit(80);
+  activityLog = data || [];
+}
+
+async function log(message, event_type='info') {
+  activityLog.unshift({ message, event_type, created_at: new Date().toISOString() });
+  renderLog();
+  if (!supabase) return;
+  await supabase.from('activity_log').insert({ user_token: USER_TOKEN, event_type, message });
+}
+
+// ============================================================
+// ADD ANIMAL
+// ============================================================
+function openAddForm() {
+  document.getElementById('add-form').style.display = 'block';
+  document.getElementById('add-form').scrollIntoView({ behavior: 'smooth' });
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  const iso = now.toISOString().slice(0,16);
+  document.getElementById('f-started').value = iso;
+  document.getElementById('f-refill').value = iso;
+}
+
+function closeAddForm() {
+  document.getElementById('add-form').style.display = 'none';
+}
+
+function onTypeChange() {
+  const type = document.getElementById('f-type').value;
+  const data = ANIMALS[type];
+  const stageEl = document.getElementById('f-stage');
+  stageEl.innerHTML = '';
+  STAGE_ORDER.forEach(s => {
+    if (data.stages[s] !== undefined) {
+      const o = document.createElement('option');
+      o.value = s; o.textContent = s[0].toUpperCase() + s.slice(1);
+      if (s === 'adolescent') o.selected = true;
+      stageEl.appendChild(o);
+    }
+  });
+}
+
+function computeReadyAt(type, stage, target, startedAt) {
+  const data = ANIMALS[type];
+  const si = STAGE_ORDER.indexOf(stage);
+  const ti = STAGE_ORDER.indexOf(target);
+  let hours = 0;
+  for (let i = si; i < ti; i++) hours += (data.stages[STAGE_ORDER[i+1]] || 0);
+  const d = new Date(startedAt);
+  d.setHours(d.getHours() + hours);
+  return d.toISOString();
+}
+
+async function addAnimal() {
+  const type    = document.getElementById('f-type').value;
+  const name    = document.getElementById('f-name').value.trim() || (ANIMALS[type].emoji + ' ' + type);
+  const stage   = document.getElementById('f-stage').value;
+  const target  = document.getElementById('f-target').value;
+  const count   = parseInt(document.getElementById('f-count').value) || 1;
+  const food    = parseInt(document.getElementById('f-food').value) || 0;
+  const started = document.getElementById('f-started').value;
+  const refill  = document.getElementById('f-refill').value;
+
+  if (!started) { toast('Please set a start time', 'red'); return; }
+
+  const ready_at = computeReadyAt(type, stage, target, started);
+  const row = {
+    user_token:       USER_TOKEN,
+    type, name,
+    emoji:            ANIMALS[type].emoji,
+    stage,
+    target_stage:     target,
+    count,
+    food_in_trough:   food,
+    food_per_hour:    count,
+    started_at:       new Date(started).toISOString(),
+    ready_at,
+    last_food_refill: refill ? new Date(refill).toISOString() : new Date(started).toISOString(),
+  };
+
+  const { data, error } = await supabase.from('animals').insert(row).select().single();
+  if (error) { toast('Failed to save: ' + error.message, 'red'); return; }
+  animals.push(data);
+  await log(`Added ${count}x ${name} (${type}) — ready ${formatDate(ready_at)}`, 'add');
+  closeAddForm();
+  renderAll();
+  toast('Animal added!', 'green');
+}
+
+async function removeAnimal(id) {
+  const a = animals.find(x => x.id === id);
+  if (!confirm(`Remove ${a?.name}?`)) return;
+  await supabase.from('animals').delete().eq('id', id);
+  animals = animals.filter(x => x.id !== id);
+  await log(`Removed ${a?.name}`, 'remove');
+  renderAll();
+}
+
+async function refillFood(id) {
+  const now = new Date().toISOString();
+  await supabase.from('animals').update({
+    food_in_trough: 1000,
+    last_food_refill: now,
+    notif_sent_low_food: false,
+  }).eq('id', id);
+  const a = animals.find(x => x.id === id);
+  if (a) { a.food_in_trough = 1000; a.last_food_refill = now; a.notif_sent_low_food = false; }
+  await log(`Refilled trough for ${a?.name} to 1000`, 'food');
+  renderAll();
+  toast('Trough refilled!', 'green');
+}
+
+// ============================================================
+// COMPUTED VALUES
+// ============================================================
+function getProgress(a) {
+  const now   = Date.now();
+  const start = new Date(a.started_at).getTime();
+  const ready = new Date(a.ready_at).getTime();
+  const total = ready - start;
+  const elapsed = now - start;
+  const pct = total > 0 ? Math.min(100, Math.round((elapsed / total) * 100)) : 100;
+  const remainMs = Math.max(0, ready - now);
+  return { pct, remainMs, done: remainMs === 0 };
+}
+
+function getFoodStatus(a) {
+  const lastRefill  = new Date(a.last_food_refill || a.started_at).getTime();
+  const hoursElapsed = (Date.now() - lastRefill) / 3600000;
+  const consumed    = Math.floor(hoursElapsed * a.food_per_hour);
+  const remaining   = Math.max(0, a.food_in_trough - consumed);
+  const hoursLeft   = a.food_per_hour > 0 ? remaining / a.food_per_hour : 999;
+  return { remaining, hoursLeft };
+}
+
+function formatMs(ms) {
+  if (ms <= 0) return 'READY';
+  const h = Math.floor(ms / 3600000);
+  const m = Math.floor((ms % 3600000) / 60000);
+  if (h > 48) return `${Math.floor(h/24)}d ${h%24}h`;
+  if (h > 0)  return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
+function formatDate(iso) {
+  return new Date(iso).toLocaleString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function renderAll() {
+  renderAnimals();
+  renderFoodUsage();
+  renderLog();
+}
+
+function renderAnimals() {
+  const list = document.getElementById('animal-list');
+  let total=0, ready=0, foodHr=0, alerts=0;
+
+  if (!animals.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">🐾</div><div class="empty-text">No animals yet. Add some to start tracking!</div></div>';
+    ['s-total','s-ready','s-food-hr','s-alerts'].forEach(id => document.getElementById(id).textContent = '0');
+    return;
+  }
+
+  list.innerHTML = animals.map(a => {
+    const prog = getProgress(a);
+    const food = getFoodStatus(a);
+    total += a.count;
+    if (prog.done) ready++;
+    foodHr += a.food_per_hour;
+    const isLow = food.hoursLeft < 4;
+    const isCritical = food.remaining === 0;
+    if (isLow || isCritical) alerts++;
+
+    const status = prog.done ? 'status-ready' : (isLow ? 'status-low-food' : 'status-growing');
+    const badge  = prog.done ? '<span class="badge ready">Ready</span>' : (isLow ? '<span class="badge low">Low Food</span>' : '<span class="badge growing">Growing</span>');
+    const pfClass = prog.done ? 'pf-done' : prog.pct > 60 ? 'pf-amber' : 'pf-amber';
+    const tClass  = prog.done ? 'done' : prog.remainMs < 7200000 ? 'soon' : 'ok';
+    const fClass  = isCritical ? 'critical' : isLow ? 'low' : 'ok';
+
+    return `
+    <div class="animal-card ${status}">
+      <div class="card-top">
+        <div class="animal-emoji">${a.emoji}</div>
+        <div>
+          <div class="animal-name-row">
+            ${a.name}
+            ${badge}
+          </div>
+          <div class="animal-meta">${a.count}x ${a.type} · ${a.stage} → ${a.target_stage} · ${ANIMALS[a.type]?.pen || ''} pen</div>
+        </div>
+        <div class="card-actions">
+          <button class="btn sm success" onclick="refillFood('${a.id}')" title="Refill trough to 1000">🍽️ Refill</button>
+          <button class="btn sm danger" onclick="removeAnimal('${a.id}')">✕</button>
+        </div>
+      </div>
+      <div class="card-bottom">
+        <div class="progress-wrap">
+          <div class="progress-label">
+            <span>${a.stage} → ${a.target_stage}</span>
+            <span>${prog.pct}%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill ${pfClass}" style="width:${prog.pct}%"></div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:3px;">Ready: ${formatDate(a.ready_at)}</div>
+        </div>
+        <div class="food-cell">
+          <div class="food-val ${fClass}">${food.remaining}</div>
+          <div class="food-sub">food left</div>
+          <div class="food-sub">${food.hoursLeft > 999 ? '∞' : Math.round(food.hoursLeft)}h remaining</div>
+        </div>
+        <div class="timer-cell">
+          <div class="timer-val ${tClass}">${formatMs(prog.remainMs)}</div>
+          <div class="timer-sub">${prog.done ? '✓ Harvest now!' : 'until ready'}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('s-total').textContent  = total;
+  document.getElementById('s-ready').textContent  = ready;
+  document.getElementById('s-food-hr').textContent = foodHr;
+  document.getElementById('s-alerts').textContent  = alerts;
+}
+
+function renderFoodUsage() {
+  const tbody = document.getElementById('food-usage-body');
+  if (!animals.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--muted)">No animals tracked</td></tr>';
+    return;
+  }
+  tbody.innerHTML = animals.map(a => {
+    const food = getFoodStatus(a);
+    const emptyAt = food.hoursLeft < 999
+      ? new Date(Date.now() + food.hoursLeft * 3600000).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})
+      : 'Never (check refill)';
+    const fColor = food.hoursLeft < 4 ? 'var(--red)' : food.hoursLeft < 12 ? 'var(--amber)' : 'var(--green)';
+    return `<tr>
+      <td>${a.emoji} ${a.name}</td>
+      <td style="color:var(--muted)">${ANIMALS[a.type]?.foodBest || '—'}</td>
+      <td>${a.count}</td>
+      <td>${a.food_per_hour}/hr</td>
+      <td>${a.food_per_hour * 24}/day</td>
+      <td style="color:${fColor}">${food.remaining} (~${Math.round(food.hoursLeft)}h)</td>
+      <td style="color:var(--muted);font-size:12px">${emptyAt}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderLog() {
+  const list = document.getElementById('log-list');
+  if (!activityLog.length) {
+    list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-style:italic;">No activity yet</div>';
+    return;
+  }
+  const icons = { add:'➕', remove:'✕', food:'🍽️', notif:'🔔', info:'ℹ️' };
+  list.innerHTML = activityLog.map(e => {
+    const t = new Date(e.created_at);
+    const ts = t.toLocaleDateString() + ' ' + t.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    return `<div class="log-entry">
+      <div class="log-time">${ts}</div>
+      <div>${icons[e.event_type] || 'ℹ️'} ${e.message}</div>
+    </div>`;
+  }).join('');
+}
+
+async function clearLog() {
+  if (!confirm('Clear all activity log entries?')) return;
+  await supabase.from('activity_log').delete().eq('user_token', USER_TOKEN);
+  activityLog = [];
+  renderLog();
+}
+
+function buildStaticTables() {
+  // Food guide
+  const fg = document.getElementById('food-guide-body');
+  fg.innerHTML = Object.entries(ANIMALS).map(([t,d]) =>
+    `<tr><td>${d.emoji} ${t[0].toUpperCase()+t.slice(1)}</td><td style="color:var(--muted)">${d.foodBest}</td><td>${d.pen}</td></tr>`
+  ).join('');
+
+  // Stage times
+  const sb = document.getElementById('stage-body');
+  sb.innerHTML = Object.entries(ANIMALS).map(([t,d]) => {
+    const toAdult = ['egg','child','adolescent'].reduce((s,st) => s + (d.stages[st] || 0), 0) + (d.stages.adult || 0);
+    const toElder = toAdult + (d.stages.elder || 0);
+    return `<tr><td>${d.emoji} ${t[0].toUpperCase()+t.slice(1)}</td><td>${toAdult}h</td><td>${toElder}h</td></tr>`;
+  }).join('');
+}
+
+// ============================================================
+// TAB SWITCHING
+// ============================================================
+function showTab(name) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => {
+    const names = ['animals','food','notifications','log'];
+    b.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.tab-content').forEach(c => {
+    c.classList.toggle('active', c.id === 'tab-' + name);
+  });
+}
+
+// ============================================================
+// PUSH NOTIFICATIONS
+// ============================================================
+function urlBase64ToUint8(base64) {
+  const pad = '='.repeat((4 - base64.length % 4) % 4);
+  const raw = atob((base64 + pad).replace(/-/g,'+').replace(/_/g,'/'));
+  const arr = new Uint8Array(raw.length);
+  for (let i=0;i<raw.length;i++) arr[i] = raw.charCodeAt(i);
+  return arr;
+}
+
+async function enableNotifications() {
+  if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+    showNotifBar('Push notifications are not supported in this browser.', 'error');
+    return;
+  }
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted') {
+    showNotifBar('Notification permission denied. Please enable in browser settings.', 'error');
+    return;
+  }
+
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8(VAPID_PUBLIC_KEY),
+    });
+    pushSubscription = sub.toJSON();
+
+    // Save to Supabase
+    const { error } = await supabase.from('push_subscriptions').upsert({
+      user_token: USER_TOKEN,
+      endpoint:   pushSubscription.endpoint,
+      p256dh:     pushSubscription.keys.p256dh,
+      auth:       pushSubscription.keys.auth,
+      last_seen:  new Date().toISOString(),
+    }, { onConflict: 'user_token' });
+
+    if (error) throw error;
+
+    showNotifBar('✓ Push notifications enabled! You\'ll receive alerts when animals are ready.', 'success');
+    await log('Push notifications enabled', 'notif');
+    updatePushStatus();
+  } catch(e) {
+    showNotifBar('Failed to enable notifications: ' + e.message, 'error');
+  }
+}
+
+function showNotifBar(msg, type='success') {
+  const el = document.getElementById('notif-bar');
+  el.textContent = msg;
+  el.className = 'notif-status-bar show ' + type;
+  setTimeout(() => el.classList.remove('show'), 6000);
+}
+
+function updatePushStatus() {
+  const el = document.getElementById('push-status');
+  const btn = document.getElementById('notif-btn');
+  if (!('Notification' in window)) {
+    el.innerHTML = '<span style="color:var(--red)">❌ Not supported in this browser</span>';
+    btn.disabled = true;
+    return;
+  }
+  if (Notification.permission === 'granted') {
+    el.innerHTML = '<span style="color:var(--green)">✓ Push notifications are active</span>';
+    btn.textContent = '✓ Notifications Active';
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+  } else if (Notification.permission === 'denied') {
+    el.innerHTML = '<span style="color:var(--red)">❌ Blocked — enable in your browser settings</span>';
+    btn.disabled = true;
+  } else {
+    el.innerHTML = '<span style="color:var(--muted)">○ Not yet enabled</span>';
+  }
+}
+
+function loadNotifSettings() {
+  try {
+    const s = JSON.parse(localStorage.getItem('notif_settings') || '{}');
+    if (s.nReady  !== undefined) document.getElementById('n-ready').checked = s.nReady;
+    if (s.nFood   !== undefined) document.getElementById('n-food').checked  = s.nFood;
+    if (s.nStage  !== undefined) document.getElementById('n-stage').checked = s.nStage;
+  } catch(e) {}
+}
+
+function saveNotifSettings() {
+  localStorage.setItem('notif_settings', JSON.stringify({
+    nReady: document.getElementById('n-ready').checked,
+    nFood:  document.getElementById('n-food').checked,
+    nStage: document.getElementById('n-stage').checked,
+  }));
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+let toastTimer;
+function toast(msg, type='') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.className = '', 3000);
+}
+
+// ============================================================
+// BOOT
+// ============================================================
+// Load Supabase SDK
+const script = document.createElement('script');
+script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+script.onload = () => { window.supabaseJs = window.supabase; init(); };
+document.head.appendChild(script);
+
+onTypeChange();
+</script>
+</body>
+</html>
