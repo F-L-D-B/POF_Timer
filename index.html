@@ -7,6 +7,7 @@
 <meta name="description" content="Track your RuneScape Player Owned Farm animals — timers, food, and push notifications when ready.">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌾</text></svg>">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 
@@ -801,9 +802,21 @@ const VAPID_PUBLIC_KEY    = 'BJg-xHNwJeLa5L43U3I-pNvUKGJ16vRzEDWf_ItQFTqUF_WoDw3
 // ============================================================
 // INIT
 // ============================================================
+const CONFIG_VALID = !SUPABASE_URL.includes('YOUR_PROJECT') && !SUPABASE_PUBLISHABLE_KEY.includes('YOUR_KEY');
+
 async function init() {
+  if (!CONFIG_VALID) {
+    document.getElementById('sync-status').textContent = '⚠️ Not configured — see SETUP.md';
+    buildStaticTables();
+    renderAll();
+    loadNotifSettings();
+    updatePushStatus();
+    toast('Owner: fill in Supabase credentials in index.html before deploying', 'red');
+    return;
+  }
+
   // Init Supabase client — public users never see or touch these keys
-  const { createClient } = supabaseJs;
+  const { createClient } = window.supabase;
   supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
   // User token (anonymous identity stored in localStorage)
@@ -1277,13 +1290,8 @@ function toast(msg, type='') {
 // ============================================================
 // BOOT
 // ============================================================
-// Load Supabase SDK
-const script = document.createElement('script');
-script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
-script.onload = () => { window.supabaseJs = window.supabase; init(); };
-document.head.appendChild(script);
-
 onTypeChange();
+init();
 </script>
 </body>
 </html>
