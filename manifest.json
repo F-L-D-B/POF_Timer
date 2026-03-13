@@ -1,0 +1,12 @@
+{
+  "name": "Manor Farm Tracker",
+  "short_name": "Farm Tracker",
+  "description": "Track your RuneScape Player Owned Farm animals",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#100d06",
+  "theme_color": "#c8a84b",
+  "icons": [
+    { "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌾</text></svg>", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
